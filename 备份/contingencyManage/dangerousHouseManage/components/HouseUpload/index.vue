@@ -1,12 +1,5 @@
 <template>
   <div class="enterprises-photo">
-    <div class="enterprises-photo-title">
-      <span>图片上传</span>
-      <span
-        class="up-number"
-      >{{ fileList.length }}/{{ limitPhtotTotal }}</span
-      >
-    </div>
     <div>
       <a-upload
         :action="action"
@@ -17,8 +10,9 @@
         @change="handleChange"
         @preview="handlePreview"
         :disabled="disabled"
+        multiple
       >
-        <div v-if="fileList.length < limitPhtotTotal">
+        <div v-if="fileList.length < limitPhtotTotal && !disabled">
           <a-icon type="plus" />
         </div>
       </a-upload>
@@ -32,7 +26,7 @@
 <script>
 import { getBase64 } from '@/utils/util'
 export default {
-  name: 'EnterprisesUpload',
+  name: 'HouseUpload',
   model: {
     prop: 'value',
     event: 'change'
@@ -52,16 +46,23 @@ export default {
     disabled: {
       type: Boolean,
       default: false
+    },
+    fileTypes: {
+      type: Array,
+      default: () => ['bmp', 'png', 'jpeg', 'jpg', 'gif']
     }
   },
   watch: {
     value (val) {
      if (Array.isArray(val)) {
         this.fileList = val.map((v, i) => ({
-          uid: i,
-          name: 'name' + i,
+          uid: v.fileUrl,
+          fileId: v.fileId,
+          name: v.fileName,
+          fileName: v.fileName,
           status: 'done',
-          url: v
+          url: v.fileUrl,
+          fileUrl: v.fileUrl
         }))
       } else {
         this.fileList = []
@@ -70,13 +71,11 @@ export default {
   },
   data () {
     return {
-      action:
-        process.env.VUE_APP_API_UPLOADIMAGE_URL + 'third/upload/upload-pic',
+      action: process.env.VUE_APP_API_UPLOAD_URL + '/third/upload/upload-pic',
       // 物业企业上传照片
       fileList: [],
       previewVisible: false,
       previewImage: '',
-      fileTypes: ['bmp', 'png', 'jpeg', 'jpg', 'gif'],
       uploadParams: {}
     }
   },
@@ -85,10 +84,15 @@ export default {
      * 物业照片上传， upload 组件触发 change 事件
      */
     handleChange (info) {
-      const { fileList, file } = info
-      this.fileList = fileList
-      if (['done', 'removed'].includes(file.status)) {
-        const urlArr = this.fileList.map(f => f.url || f.response.dataBody.url)
+      const { fileList } = info
+      this.fileList = fileList.slice(0, this.limitPhtotTotal)
+      const isAllDone = this.fileList.every(file => file.status === 'done')
+      if (isAllDone) {
+        const urlArr = this.fileList.map(f => ({
+          fileId: f.fileId || 0,
+          fileName: f.fileName || f.response.dataBody.filename,
+          fileUrl: f.fileUrl || f.response.dataBody.url
+        }))
         this.$emit('change', urlArr)
       }
     },
@@ -108,10 +112,11 @@ export default {
      */
     beforeUpload (file) {
       return new Promise((resolve, reject) => {
-        const type = file.type.split('/')[1]
+        const type = file.name.split('.').slice(-1)[0]
         const isImg = this.fileTypes.includes(type)
         if (!isImg) {
-          this.$message.error('请上传格式为bmp、png、jpeg、jpg或gif的图片')
+          const errMessage = `请上传格式为${this.fileTypes.toString()}的图片`
+          this.$message.error(errMessage)
           return reject(new Error(false))
         }
         const isLt2M = file.size / 1024 / 1024 < 2
@@ -143,8 +148,6 @@ export default {
 
 <style lang="less" scoped>
 .enterprises-photo {
-  border: 1px solid #dbdbdb;
-  padding: 5px 15px;
   &-title {
     display: flex;
     justify-content: space-between;

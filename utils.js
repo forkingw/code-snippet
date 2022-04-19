@@ -144,14 +144,14 @@ const space = '&nbsp;'
 /**
  * 千分位处理
  */
- export function handleThousandNumber (value, groupSeparator = ',') {
+export function handleThousandNumber (value, groupSeparator = ',') {
   const val = String(value)
   const cells = val.match(/^(-?)(\d*)(\.(\d+))?$/)
   if (!cells) {
     return value
   } else {
     const negative = cells[1]
-    let int = cells[2] || '0'
+    let int = cells[3] || '0'
     const decimal = cells[4] || ''
     int = int.replace(/\B(?=(\d{3})+(?!\d))/g, groupSeparator)
     return negative + int + decimal
