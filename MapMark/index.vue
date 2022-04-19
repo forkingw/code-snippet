@@ -5,10 +5,10 @@
       ak="F24144dfca1a28f1ab3e5e8d25770c79"
       :center="value"
       :zoom="zoom"
+      :scroll-wheel-zoom="true"
     >
       <bm-view class="map" style="width: 350px; height: 180px"></bm-view>
-      <bm-marker :position="{ lng: value.lng, lat: value.lat }">
-      </bm-marker>
+      <bm-marker :position="{ lng: value.lng, lat: value.lat }"></bm-marker>
     </BaiduMap>
     <a-button type="link" @click="showMap" :disabled="disabled">{{ haveCoordinate ? modifyText : addText }}</a-button>
     <a-modal
@@ -20,7 +20,7 @@
       @ok="saveCoordinate"
       @cancel="handleCancel"
     >
-      <div>
+      <div v-if="visible">
         <div class="search-input">
           <span style="width: 65px;">搜索：</span>
           <a-input placeholder="请输入需要搜索的区域" v-model="inputText" @keyup.enter="searchAddress" />
@@ -94,8 +94,8 @@ export default {
   data () {
     const { lng, lat } = this.value || {}
     const value = {
-      lng: lng || 120.763549,
-      lat: lat || 30.750974
+      lng: lng,
+      lat: lat
     }
     return {
       zoom: 13,
@@ -110,8 +110,8 @@ export default {
   computed: {
     center () {
       return {
-        lng: this.lng,
-        lat: this.lat
+        lng: this.lng || 120.750865,
+        lat: this.lat || 30.762653
       }
     },
     haveCoordinate () {
@@ -121,8 +121,8 @@ export default {
   },
   watch: {
     value (val) {
-      this.lng = val?.lng || 120.763549
-      this.lat = val?.lat || 30.750974
+      this.lng = val?.lng
+      this.lat = val?.lat
     }
   },
   methods: {
@@ -136,8 +136,14 @@ export default {
     resetKeyword () {
       this.inputText = ''
       this.keyword = ''
-      this.lng = 120.78483
-      this.lat = 30.74744
+      const { lng, lat } = this.value
+      if (lng && lat) {
+        this.lng = lng
+        this.lat = lat
+      } else {
+        this.lng = 120.750865
+        this.lat = 30.762653
+      }
     },
     syncCenterAndZoom (e) {
       if (this.zoom && this.disabled === false) {
@@ -156,11 +162,21 @@ export default {
     handleCancel () {
       this.inputText = ''
       this.visible = false
+      const { lng, lat } = this.value
+      this.lng = lng
+      this.lat = lat
     },
     saveCoordinate () {
-      this.handleCancel()
       this.$emit('change', { lng: this.lng, lat: this.lat })
+      this.handleCancel()
     }
+    // /**
+    //  * 地图渲染完成
+    //  */
+    // mapReady () {
+    //   console.log('mapReady')
+    //   this.isMapReady = true
+    // }
   }
 }
 </script>
