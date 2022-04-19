@@ -1,5 +1,5 @@
 <template>
-  <page-header-wrapper>
+  <page-header-wrapper :breadcrumb="{ props: { routes: $store.getters.customRoutes, itemRender: defaultItemRender } }">
     <a-card :bordered="false">
      
     </a-card>
