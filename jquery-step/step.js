@@ -164,14 +164,15 @@
     // 渲染 横着的 步骤条
     _renderHorizontalStep (index) {
       var that = this
-          $formStep = that.$el.find('.eis-form-steps'),
-          $formSteps = $formStep.find('.eis-form-step'),
+          $formStep = that.$el.children('.eis-form-steps'),
+          $formSteps = $formStep.children('.eis-form-step'),
           $stepWidth = $formSteps.width(),
-          $stepProgress = $formStep.find('.eis-step-progress'), //步骤条
+          $stepProgress = $formStep.children('.eis-step-progress'), //步骤条
           $stepIcon = $formSteps.find('.eis-step-icon'),
           $targetStep = $($stepIcon[index])
       if (index === 0) {
         $stepProgress.width($stepWidth / 2)
+        $targetStep.parent().parent().addClass('is-finish')
         $targetStep.parent().parent().nextAll().removeClass('is-finish')
       } else if (index === $stepIcon.length - 1) {
         $stepProgress.width($stepWidth * (that.settings.stepCount - 1))
@@ -188,15 +189,16 @@
     // 渲染 竖着的 步骤条
     _renderVerticalStep (index) {
       var that = this,
-          $formStep = that.$el.find('.eis-form-steps'),
-          $formSteps = $formStep.find('.eis-form-step'),
-          $stepProgress = $formStep.find('.eis-step-progress'), //步骤条
+          $formStep = that.$el.children('.eis-form-steps'),
+          $formSteps = $formStep.children('.eis-form-step'),
+          $stepProgress = $formStep.children('.eis-step-progress'), //步骤条
           $stepIcon = $formSteps.find('.eis-step-icon'),
           $stepHeight = $formSteps.height(),
           $targetStep = $($stepIcon[index])
           
       if (index === 0) {
         $stepProgress.height($stepHeight / 2)
+        $targetStep.parent().parent().addClass('is-finish')
         $targetStep.parent().parent().nextAll().removeClass('is-finish')
       } else if (index === $stepIcon.length - 1) {
         $stepProgress.height($stepHeight * (that.settings.stepCount - 1))
