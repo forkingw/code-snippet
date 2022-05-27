@@ -104,6 +104,7 @@ export default {
   right: 0px;
   bottom: 65px;
   padding-right: 24px;
+  padding-top: 20px;
   overflow: auto;
 }
 </style>

@@ -43,7 +43,7 @@ export default {
     return {
       formColSpan: { md: 6, sm: 24 },
       queryParam: {},
-      projectmanagerList: [],
+      projectmanagerList: []
     };
   },
   methods: {

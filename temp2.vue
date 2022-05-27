@@ -1,322 +1,314 @@
 <template>
-  <page-header-wrapper :breadcrumb="{ props: { routes: $store.getters.customRoutes, itemRender: defaultItemRender } }">
-    <a-card :bordered="false">
-      <div class="table-page-search-wrapper" @keyup.enter="handleQuery()" v-action:query>
-        <a-form layout="inline">
-          <a-row :gutter="48">
-            <a-col v-bind="formColSpan">
-              <a-form-item label="项目名称">
-                <a-input
-                  v-model.trim="queryParam.floor"
-                  placeholder="请输入"
-                  allowClear
-                />
-              </a-form-item>
-            </a-col>
-            <a-col v-bind="formColSpan">
-              <a-form-item label="项目类型">
-                <a-select
-                  placeholder="请选择"
-                  allowClear
-                  v-model="queryParam.floorTypeId"
-                >
-                  <a-select-option v-for="d in projectTypes" :key="d.optionValueId" :value="d.optionValueId">
-                    {{ d.optionName }}
-                  </a-select-option>
-                </a-select>
-              </a-form-item>
-            </a-col>
-            <a-col v-bind="formColSpan">
-              <a-form-item label="区域">
-                <a-cascader
-                  placeholder="请选择"
-                  allowClear
-                  change-on-select
-                  :options="areaList"
-                  :fieldNames="{ label: 'areaName', value: 'areaId', children: 'children' }"
-                  :load-data="getGlbArea"
-                  v-model="area"
-                />
-              </a-form-item>
-            </a-col>
-            <a-col v-bind="formColSpan">
-              <a-form-item label="开发商">
-                <a-input
-                  v-model.trim="queryParam.developCompany"
-                  placeholder="请输入"
-                  allowClear
-                />
-              </a-form-item>
-            </a-col>
-            <a-col v-bind="formColSpan">
-              <a-form-item label="物业服务企业名称">
-                <a-input
-                  v-model.trim="queryParam.propertyCompany"
-                  placeholder="请输入"
-                  allowClear
-                />
-              </a-form-item>
-            </a-col>
-            <a-col v-bind="formColSpan">
-              <a-form-item>
-                <a-button type="primary" @click="handleQuery()">查询</a-button>
-                <a-button
-                  style="margin-left: 8px"
-                  @click="resetSearchForm"
-                >重置</a-button
-                >
-              </a-form-item>
-            </a-col>
-          </a-row>
-        </a-form>
-      </div>
-
-      <a-space class="buttons-wrap">
-        <a-button v-action:add type="primary" @click="showAddDrawer">添加</a-button>
-      </a-space>
-
-      <s-table
-        ref="table"
-        size="default"
-        rowKey="floorId"
-        :columns="columns"
-        :data="loadData"
-        :scroll="scroll"
-      >
-        <span slot="floor" slot-scope="text">
-          <ellipsis :length="30" tooltip>
-            {{ text }}
-          </ellipsis>
-        </span>
-        <span slot="area" slot-scope="text, {areaName, streetName, communityName}">
-          <ellipsis :length="30" tooltip>
-            {{ `${areaName || ''}${streetName || ''}${communityName || ''}` }}
-          </ellipsis>
-        </span>
-        <span slot="ellipsis" slot-scope="text">
-          <ellipsis :length="30" tooltip>
-            {{ text }}
-          </ellipsis>
-        </span>
-        <span slot="action" slot-scope="text, record">
-          <template>
-            <a @click="goToInfo(record.floorId)" v-action:get>详情</a>
-            <a-divider type="vertical" v-action:get />
-            <a @click="showMaintainDrawer(record.floorId)" v-action:maintain>维护</a>
-            <a-divider type="vertical" v-action:get v-action:maintain />
-          </template>
-        </span>
-      </s-table>
-    </a-card>
-    <MaintainProjectDrawer ref="maintainProjectRef" @ok="handleQuery('current')" />
-  </page-header-wrapper>
+  <a-drawer :title="title" :visible="visible" @close="onClose" :width="drawerConfig.drawerWidth">
+    <div class="drawer-content">
+      <a-form :form="form" :labelCol="drawerConfig.labelCol" :wrapperCol="drawerConfig.wrapperCol">
+        <a-form-item label="小区">
+          <a-select
+            v-decorator="['floorId', { rules: [{ required: true, message: '请选择小区!' }] }]"
+            allowClear
+            placeholder="请选择小区，支持输入搜索!"
+            show-search
+            :filter-option="false"
+            @search="getFloorList"
+            @change="onFloorChange"
+          >
+            <a-select-option
+              v-for="item in floorList"
+              :value="item.floorId"
+              :key="item.floorId"
+            >
+              {{ item.floor }}
+            </a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="楼栋" v-if="floorId !== 0">
+          <a-select
+            v-decorator="['buildingId']"
+            allowClear
+            placeholder="请选择楼栋"
+            @change="onBuildingChange"
+          >
+            <a-select-option
+              v-for="item in buildingList"
+              :value="item.buildingId"
+              :key="item.buildingId"
+            >
+              {{ item.buildingByname }}
+            </a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="位置标注">
+          <FormMap
+            v-decorator="[
+              'coordinate',
+              {
+                initialValue: {},
+                rules: [{ required: true, type: 'object', message: '请选择位置标注！'}]
+              }
+            ]"
+          />
+        </a-form-item>
+        <a-form-item label="坐落地址">
+          <a-input
+            v-decorator="['buildingAddress', { rules: [{ required: true, message: '请输入坐落地址' }] }]"
+            allowClear
+            :maxLength="30"
+            placeholder="不超过30个字"
+          />
+        </a-form-item>
+        <a-form-item label="竣工日期">
+          <a-date-picker
+            v-decorator="['completionDate']"
+            allowClear
+            :format="dateFormat"
+            :value-format="dateFormat"
+            placeholder="请选择日期"
+          ></a-date-picker>
+        </a-form-item>
+        <a-form-item label="结构类型">
+          <a-select
+            v-decorator="['buildingStructureId']"
+            allowClear
+            placeholder="请选择结构类型"
+          >
+            <a-select-option
+              v-for="item in buildingStructureList"
+              :value="item.optionValueId"
+              :key="item.optionValueId"
+            >
+              {{ item.optionName }}
+            </a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="建筑层数">
+          <a-input type="number" v-decorator="['sumLayer', { rules: [ numberRule ] }]" allowClear addon-after="层" />
+        </a-form-item>
+        <a-form-item label="总建筑面积">
+          <a-input type="number" v-decorator="['buildingArea', { rules: [ numberRule ] }]" allowClear addon-after="m²" />
+        </a-form-item>
+        <a-form-item label="住宅总套数">
+          <a-input type="number" v-decorator="['buildingHouseCount', { rules: [ numberRule ] }]" allowClear addon-after="间" />
+        </a-form-item>
+        <a-form-item label="上传危房图片" extra="仅支持.jpg、png格式。">
+          <HouseUpload
+            v-decorator="['dilapidatedImage', { initialValue: [], rules: [{ required: true, type: 'array', message: '请上传危房图片!' }] }]"
+            :limitPhtotTotal="Infinity"
+            multiple
+            :fileTypes="['png', 'jpg']"
+          />
+        </a-form-item>
+        <a-form-item label="危险点描述">
+          <a-textarea
+            v-decorator="['dilapidatedExplain']"
+            :maxLength="300"
+            placeholder="不超过300个字"
+            :rows="4"
+          />
+        </a-form-item>
+      </a-form>
+    </div>
+    <div class="drawer-bottom-button">
+      <a-button :style="{ marginRight: '8px' }" @click="onClose">取消</a-button>
+      <a-button type="primary" :loading="iconLoading" @click="handleSubmit">确定</a-button>
+    </div>
+  </a-drawer>
 </template>
 
 <script>
-import { dict } from '@/api/system'
-import { glbArea } from '@/api/common'
-import { getProjectList } from '@/api/projectManage'
-import { STable, Ellipsis } from '@/components'
-import MaintainProjectDrawer from './modules/MaintainProjectDrawer.vue'
+import { saveDilapidated, getFloorInfo, getBuildingInfo, getEditHouseInfo } from '@/api/contingencyManage/dangerousHouseManage.js'
+import { dropdownList } from '@/api/common'
+import { debounce } from '@/utils/util.js'
+import FormMap from '@/components/FormMap/index.vue'
+import HouseUpload from '../components/HouseUpload/index.vue'
+import { pick } from 'lodash'
+const fields = ['floorId', 'buildingId', 'coordinate', 'buildingAddress', 'completionDate', 'buildingStructureId', 'sumLayer', 'buildingArea', 'buildingHouseCount', 'dilapidatedImage', 'dilapidatedExplain']
 
 export default {
-  name: 'ProjectList',
+  name: 'DangerousHouseDrawer',
   components: {
-    STable,
-    Ellipsis,
-    MaintainProjectDrawer
+    FormMap,
+    HouseUpload
   },
   data () {
+    this.getFloorList = debounce(this.getFloorList, 200)
     return {
-      formColSpan: { md: 6, sm: 24 },
-      queryParam: {},
-      // 项目类型下拉数据
-      projectTypes: [],
-      areaList: [],
-      area: [],
-      scroll: {
-        x: true
-      },
-      columns: [
-        {
-          title: 'ID',
-          dataIndex: 'floorId'
-        },
-        {
-          title: '项目名称',
-          dataIndex: 'floor',
-          scopedSlots: { customRender: 'floor' }
-        },
-        {
-          title: '项目类型',
-          dataIndex: 'floorType'
-        },
-        {
-          title: '区域',
-          dataIndex: 'area',
-          scopedSlots: { customRender: 'area' }
-        },
-        {
-          title: '项目详细地址',
-          dataIndex: 'address',
-          scopedSlots: { customRender: 'ellipsis' }
-        },
-        {
-          title: '房屋数',
-          dataIndex: 'houseQuantity'
-          // scopedSlots: { customRender: 'houseQuantity' }
-        },
-        {
-          title: '开发商',
-          dataIndex: 'developCompany',
-          scopedSlots: { customRender: 'ellipsis' }
-        },
-        {
-          title: '物业服务企业',
-          dataIndex: 'propertyCompany',
-          scopedSlots: { customRender: 'ellipsis' }
-        },
-        {
-          title: '操作',
-          dataIndex: 'action',
-          width: '120px',
-          scopedSlots: { customRender: 'action' },
-          fixed: 'right'
+      visible: false,
+      form: this.$form.createForm(this, { name: 'dangerousHouse' }),
+      iconLoading: false,
+      isEdit: false,
+      buildingStructureList: [],
+      floorList: [],
+      buildingList: [],
+      dateFormat: 'YYYY-MM-DD',
+      dilapidatedId: undefined,
+      info: {},
+      numberRule: { validator (rule, value, callback) {
+          if (value < 0) {
+            callback(new Error('该数字不能小于0'))
+          }
+          callback()
         }
-      ]
+      },
+      floorId: undefined
     }
   },
   computed: {
-    /**
-     * 当前用户的所属级别的 区域名称
-     */
-    currentArea () {
-      return this.$store.getters?.userInfo?.currentArea
-    },
-    /**
-     * 当前用户的所属级别的 区域Id
-     */
-    currentAreaId () {
-      return this.$store.getters?.userInfo?.currentAreaId
-    },
-    /**
-     * 当前用户所属级别
-     * 市 县区 街道 社区
-     */
-    currentAreaLevel () {
-      return this.$store.getters?.userInfo?.currentAreaLevel
-    }
-  },
-  watch: {
-    area (val) {
-      const [areaId, streetId, communityId] = val || []
-      this.queryParam.areaId = areaId
-      this.queryParam.streetId = streetId
-      this.queryParam.communityId = communityId
+    title () {
+      return this.isEdit ? '编辑城镇危房' : '新添城镇危房'
     }
   },
   created () {
-    this.init()
+    this.getInitData()
   },
   methods: {
-    init () {
-      this.getProjectTypeList()
-      this.initAreaList()
-    },
-    initAreaList () {
-      const tempCity = {
-        areaId: this.currentAreaId,
-        areaName: this.currentArea
-      }
-      if (this.currentAreaLevel && this.currentAreaLevel < 4) {
-        tempCity.isLeaf = false
-      }
-      this.areaList = [tempCity]
-    },
-    loadData (parameter) {
-      const params = Object.assign({}, parameter, this.queryParam)
-      return getProjectList(params)
-    },
-    /**
-     * 跳转到详情页
-     */
-    goToInfo (floorId) {
-      this.$router.push({
-        name: 'projectDetail',
-        query: {
-          floorId
-        }
-      })
-    },
-    /**
-     * 打开维护 Drawer
-     */
-    showMaintainDrawer (id) {
-      this.$refs.maintainProjectRef.showDrawer(id)
-    },
-    /**
-     * 获取项目类型下拉列表
-     */
-    getProjectTypeList () {
-      dict({ dictionaryCode: 'projectType', optionValueIds: [] }).then(res => {
+    getFloorList (value = '') {
+      getFloorInfo({
+        floor: value
+      }).then(res => {
         if (res.code === 0) {
-          this.projectTypes = res.dataBody
+          // 如果 搜索到了对应的小区，则展示返回的数据
+          // 如果没有搜索到对应的小区， 则 添加 输入的小区， 其 floorId 为 0
+          if (res.dataBody.length) {
+            this.floorList = res.dataBody
+          } else {
+            this.floorList = [
+              {
+                floorId: 0,
+                floor: value
+              }
+            ]
+          }
         }
       })
     },
-    /**
-     * 获取区域地址 级联数据
-     */
-    getGlbArea (selectedOptions = []) {
-      const params = {}
-      const level = selectedOptions.length
-      const targetOption = selectedOptions[level - 1]
-      const haveValue = level !== 0
-      if (haveValue) {
-        params.areaId = targetOption.areaId
-        targetOption.loading = true
-      } else if (level === 3) return
-      glbArea(params).then(res => {
-        const { dataBody } = res
-        if (haveValue) {
-          targetOption.loading = false
-          targetOption.children = !dataBody ? dataBody : dataBody.map(d => {
-            if (level < 2) {
-              d.isLeaf = false
+    getInitData () {
+      dropdownList({
+        dictionaryCode: 'buildingStructure'
+      }).then(res => {
+        if (res.code === 0) {
+          this.buildingStructureList = res.dataBody
+        }
+      })
+    },
+    onFloorChange (floorId) {
+      console.log(floorId)
+      this.floorId = floorId
+      if (floorId) {
+        const floorInfo = this.floorList.find(f => f.floorId === floorId)
+        const { bmapx, bmapy } = floorInfo || {}
+        if (bmapx && bmapy) {
+          this.form.setFieldsValue({ coordinate: { lng: bmapx, lat: bmapy } })
+        }
+        getBuildingInfo({ floorId }).then(res => {
+          if (res.code === 0) {
+            this.buildingList = res.dataBody
+          }
+        })
+      } else {
+        this.getFloorList()
+        this.buildingList = []
+        this.form.resetFields(['buildingId', 'coordinate'])
+      }
+    },
+    onBuildingChange (value) {
+      const build = this.buildingList.find(b => b.buildingId === value)
+      const { bmapx, bmapy } = build || {}
+      if (bmapx && bmapy) {
+        this.form.setFieldsValue({ coordinate: { lng: bmapx, lat: bmapy } })
+      }
+    },
+    showDrawer (dilapidatedId) {
+      this.visible = true
+      if (dilapidatedId) {
+        this.isEdit = true
+        this.dilapidatedId = dilapidatedId
+        this.getInfo(dilapidatedId)
+      } else {
+        this.isEdit = false
+        this.getFloorList()
+      }
+    },
+    onClose () {
+      this.visible = false
+      this.iconLoading = false
+      this.isEdit = false
+      this.dilapidatedId = undefined
+      this.form.resetFields()
+    },
+    handleSubmit () {
+      this.form.validateFields(async (err, values) => {
+        if (!err) {
+          // floor
+          const { floorId, buildingId, coordinate = {}, buildingStructureId } = values
+          if (this.isEdit) {
+            values.dilapidatedId = this.dilapidatedId
+          }
+          const floorObj = this.floorList.find(f => f.floorId === floorId)
+          values.floor = floorObj?.floor
+          values.floorNumber = floorObj?.floorNumber
+
+          // Object.assign(values, build)
+          const build = this.buildingList.find(b => b.buildingId === buildingId)
+          values.building = build?.building
+          values.buildingByname = build?.buildingByname
+
+          values.mapy = coordinate.lat
+          values.mapx = coordinate.lng
+          delete values.coordinate
+
+          values.buildingStructure = this.buildingStructureList.find(b => b.optionValueId === buildingStructureId)?.optionName
+
+          this.iconLoading = true
+          saveDilapidated(values).then(res => {
+            const { code, message } = res
+            if (code === 0) {
+              this.$message.success(message)
+              this.onClose()
+              this.$emit('handleQuery')
             }
-            return d
-          })
-          this.areaList = [...this.areaList]
-        } else {
-          this.areaList = dataBody.map(d => {
-            d.isLeaf = false
-            return d
+          }).finally(() => {
+            this.iconLoading = false
           })
         }
-      }).catch(err => {
-        this.$message.error(err.message)
       })
     },
-    handleQuery (bool) {
-      this.$nextTick(() => {
-        this.$refs.table.refresh(!bool)
+    getInfo (dilapidatedId) {
+      getEditHouseInfo(dilapidatedId).then(res => {
+        if (res.code === 0) {
+          this.info = res.dataBody
+          const { building, buildingByname, buildingId, mapx, mapy, floor, floorId, floorNumber, buildingList } = this.info
+          this.info.buildingId = buildingId || undefined
+          this.info.build = { building, buildingByname, buildingId }
+
+          this.info.coordinate = {
+            lat: mapy,
+            lng: mapx
+          }
+          this.floorList = [{
+            floorId,
+            floor,
+            floorNumber
+          }]
+          this.floorId = floorId
+          this.buildingList = buildingList
+          this.$nextTick(() => {
+            this.form.setFieldsValue(pick(this.info, fields))
+          })
+        }
       })
-    },
-    // 重置搜索
-    resetSearchForm () {
-      this.queryParam = {}
-      this.area = []
-      this.handleQuery()
-    },
-    showAddDrawer () {
-      this.$refs.maintainProjectRef.showDrawer()
     }
   }
 }
 </script>
 
 <style lang="less" scoped>
-.buttons-wrap {
-  margin-bottom: 15px;
+.drawer-content {
+  position: absolute;
+  top: 55px;
+  left: 24px;
+  right: 0px;
+  bottom: 65px;
+  padding-right: 24px;
+  overflow: auto;
 }
 </style>

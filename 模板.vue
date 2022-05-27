@@ -1,5 +1,8 @@
 <template>
   <page-header-wrapper :breadcrumb="{ props: { routes: $store.getters.customRoutes, itemRender: defaultItemRender } }">
+    <!-- <template v-slot:extra>
+      <a-button style="float: right" @click="goBack">返回</a-button>
+    </template> -->
     <a-card :bordered="false">
      
     </a-card>

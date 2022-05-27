@@ -157,3 +157,14 @@ export function handleThousandNumber (value, groupSeparator = ',') {
     return negative + int + decimal
   }
 }
+
+/**
+ * 处理带有后缀名的 文件名
+ */
+export function getFileName () {
+  const lastIndex = this.info?.appendixName.lastIndexOf('.')
+  let fileName
+  if (lastIndex > -1) {
+    fileName = this.info.appendixName.slice(0, lastIndex)
+  }
+}

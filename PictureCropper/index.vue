@@ -74,6 +74,7 @@ class UpLoadFile {
   }
 }
 export default {
+  name: 'PictureCropper',
   model: {
     // v-model与change绑定
     prop: 'value',
