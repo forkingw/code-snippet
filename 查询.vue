@@ -16,6 +16,7 @@
             <a-select
               placeholder="请选择"
               allowClear
+              :getPopupContainer="(triggerNode) => triggerNode.parentNode"
               v-model="queryParam.projectmanager"
             >
               <a-select-option v-for="d in projectmanagerList" :key="d">
