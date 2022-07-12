@@ -12,7 +12,11 @@
 <script>
 
 export default {
-  name: ''
+  name: '',
+  // methods: {
+  // goBack () {
+  //   this.$router.back()
+  // }
 }
 </script>
 
