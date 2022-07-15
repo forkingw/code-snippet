@@ -54,7 +54,7 @@ export function downloadTool(dataStream) {
 
 /**
  * 浏览器生成 uuid
- * 有兼容性限制 ie11 一下，不支持
+ * ! 有兼容性限制 ie11 一下，不支持
  * @returns {String}
  */
 export const UUIDGeneratorBrowser = () =>
