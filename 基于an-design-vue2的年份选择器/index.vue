@@ -15,7 +15,7 @@
 
 <script>
 export default {
-  name: 'YeanPicker',
+  name: 'YearPicker',
   model: {
     prop: 'value',
     event: 'change'
